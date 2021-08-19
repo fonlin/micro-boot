@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<included>
+    <!--引入spring.application.name-->
+    <springProperty scope="context" name="SPRING_NAME" source="spring.application.name" defaultValue="spring"/>
+    <property name="APP_NAME" value="${SPRING_NAME}"/>
+    <!--日志输出路径-->
+    <if condition='property("os.name").contains("Mac OS")'>
+        <then>
+            <property name="LOG_PATH" value="${user.home}/data/log/${APP_NAME}"/>
+        </then>
+        <else>
+            <property name="LOG_PATH" value="/data/log/${APP_NAME}"/>
+        </else>
+    </if>
+    <!--日志文件编码-->
+    <property name="FILE_ENCODING" value="UTF-8"/>
+    <!--日志文件输出格式-->
+    <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${PID:- } --- [%t] %-40.40logger{39} : %m%n%wEx"/>
+    <!--控制台日志输出格式-->
+    <property name="CONSOLE_LOG_PATTERN" value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"/>
+
+    <!--jmx动态修改日志级别-->
+    <jmxConfigurator/>
+
+    <!--控制台输出-->
+    <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter" />
+    <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter" />
+    <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter" />
+    <appender name="CONSOLE_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!--定义一个日志文件会滚动压缩的appender-->
+    <appender name="FILE_TIME_ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!--指定文件路径-->
+        <file>${LOG_PATH}/${APP_NAME}.log</file>
+        <!--多个jvm可以同时操作同一份日志文件（微服务多实例情况下）-->
+        <prudent>false</prudent>
+        <!--指定日志输出格式-->
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <!--滚动策略-->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--压缩出的文件名，按天和文件大小压缩-->
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}_%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+            <!--最多保留30天的日志-->
+            <maxHistory>30</maxHistory>
+            <!--日志文件达到最大1024MB时会被压缩-->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>1024MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <!--定义一个日志文件会滚动压缩的只接收error日志的appender-->
+    <appender name="FILE_TIME_ROLLING_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}_error.log</file>
+        <prudent>false</prudent>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/${APP_NAME}_error_%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!--文件达到 最大1024MB时会被压缩和切割 -->
+                <maxFileSize>1024MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 日志文件异步输出 -->
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>512</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="FILE_TIME_ROLLING"/>
+    </appender>
+
+    <!-- 日志error文件异步输出 -->
+    <appender name="ASYNC_ERROR" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>512</queueSize>
+        <appender-ref ref="FILE_TIME_ROLLING_ERROR"/>
+    </appender>
+
+    <root level="INFO">
+        <!--在非dev环境关闭控制台日志输出，减少性能损耗-->
+        <!--01.12取消此配置，因为排查日志很困难-->
+        <!--<if condition='"".equals(property("env")) || "dev".equalsIgnoreCase(property("env"))'>
+            <then>
+                <appender-ref ref="CONSOLE_STDOUT"/>
+            </then>
+        </if>-->
+        <appender-ref ref="CONSOLE_STDOUT"/>
+        <appender-ref ref="ASYNC"/>
+        <appender-ref ref="ASYNC_ERROR"/>
+    </root>
+</included>

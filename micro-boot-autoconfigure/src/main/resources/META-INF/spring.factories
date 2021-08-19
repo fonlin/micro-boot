@@ -1,0 +1,4 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.microframework.boot.autoconfigure.mybatisplus.MybatisPlusAutoConfiguration,\
+com.microframework.boot.autoconfigure.web.WebAutoConfiguration
+
