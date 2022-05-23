@@ -155,17 +155,6 @@
         </dependencies>
     </dependencyManagement>
 
-    <!--配置发布到nexus私服地址-->
-    <distributionManagement>
-        <repository>
-            <id>nexus-releases</id>
-            <url>https://nexus-cz.it.lixiangoa.com/repository/maven-releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>nexus-snapshots</id>
-            <url>https://nexus-cz.it.lixiangoa.com/repository/maven-snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
 
     <build>
         <pluginManagement>
